@@ -6,8 +6,6 @@ type Project struct{
     Name string
     DB        string
     Framework string
-    WithAuth bool
-    WithCache bool
 
     Fs  embed.FS
 }
@@ -18,7 +16,7 @@ type Project struct{
 
 type File struct{
     Name string
-    Src []byte
+    Src string
 }
 
 type Dir struct{

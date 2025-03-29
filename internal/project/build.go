@@ -61,17 +61,19 @@ func (p *Project) buildProjectStructure() Dir {
     cmd.Dirs = append(cmd.Dirs, Dir{
         Name: "api",
         Files: []File{
-            {Name: "api.go", Src: p.LoadFile(fmt.Sprintf(frameworkPath + "%s", "api.go.boil"))},
+            // files that contain project's name
+            {Name: "api.go", Src: fmt.Sprintf(p.LoadFile(fmt.Sprintf(frameworkPath + "%s", "api.go.boil")), p.Name)},
+            {Name: "auth.go", Src: fmt.Sprintf(p.LoadFile(fmt.Sprintf(frameworkPath + "%s", "auth.go.boil")), p.Name)},
+            {Name: "middleware.go", Src: fmt.Sprintf(p.LoadFile(fmt.Sprintf(frameworkPath + "%s", "middleware.go.boil")), p.Name)},
+            {Name: "main.go", Src: fmt.Sprintf(p.LoadFile(fmt.Sprintf(frameworkPath + "%s", "main.go.boil")), p.Name)},
+            {Name: "test_utils.go", Src: fmt.Sprintf(p.LoadFile(fmt.Sprintf(frameworkPath + "%s", "test_utils.go.boil")), p.Name)},
+            {Name: "users.go", Src: fmt.Sprintf(p.LoadFile(fmt.Sprintf(frameworkPath + "%s", "users.go.boil")), p.Name)},
+
             {Name: "api_test.go", Src: p.LoadFile(fmt.Sprintf(frameworkPath + "%s", "api_test.go.boil"))},
-            {Name: "auth.go", Src: p.LoadFile(fmt.Sprintf(frameworkPath + "%s", "auth.go.boil"))},
             {Name: "errors.go", Src: p.LoadFile(fmt.Sprintf(frameworkPath + "%s", "errors.go.boil"))},
-            {Name: "users.go", Src: p.LoadFile(fmt.Sprintf(frameworkPath + "%s", "users.go.boil"))},
             {Name: "users_test.go", Src: p.LoadFile(fmt.Sprintf(frameworkPath + "%s", "users_test.go.boil"))},
             {Name: "health.go", Src: p.LoadFile(fmt.Sprintf(frameworkPath + "%s", "health.go.boil"))},
             {Name: "json.go", Src: p.LoadFile(fmt.Sprintf(frameworkPath + "%s", "json.go.boil"))},
-            {Name: "middleware.go", Src: p.LoadFile(fmt.Sprintf(frameworkPath + "%s", "middleware.go.boil"))},
-            {Name: "test_utils.go", Src: p.LoadFile(fmt.Sprintf(frameworkPath + "%s", "test_utils.go.boil"))},
-            {Name: "main.go", Src: p.LoadFile(fmt.Sprintf(frameworkPath + "%s", "main.go.boil"))},
         },
     })
 
@@ -101,9 +103,10 @@ func (p *Project) buildProjectStructure() Dir {
     store.Dirs = append(store.Dirs, Dir{
         Name: "cache",
         Files: []File{
-            {Name: "storage.go", Src: p.LoadFile("internal/src-files/cache/storage.go.boil")},
-            {Name: "mocks.go", Src: p.LoadFile("internal/src-files/cache/mocks.go.boil")},
-            {Name: "users.go", Src: p.LoadFile("internal/src-files/cache/users.go.boil")},
+            {Name: "storage.go", Src: fmt.Sprintf(p.LoadFile("internal/src-files/cache/storage.go.boil"), p.Name)},
+            {Name: "users.go", Src: fmt.Sprintf(p.LoadFile("internal/src-files/cache/users.go.boil"), p.Name)},
+            {Name: "mocks.go", Src: fmt.Sprintf(p.LoadFile("internal/src-files/cache/mocks.go.boil"), p.Name)},
+
             {Name: "redis.go", Src: p.LoadFile("internal/src-files/cache/redis.go.boil")},
         },
     })
@@ -121,7 +124,7 @@ func (p *Project) buildProjectStructure() Dir {
     internals.Dirs = append(internals.Dirs, Dir{
         Name: "db",
         Files: []File{
-            {Name: "db.go", Src: p.LoadFile("internal/src-files/db/db.go.boil")},
+            {Name: "db.go", Src: p.LoadFile(fmt.Sprintf(dbPath + "%s", "db/db.go.boil"))},
         },
     })
 
@@ -150,7 +153,7 @@ func (p *Project) traverseDirStructure(path string, dir Dir) error {
     }
 
     for _, f := range dir.Files{
-        if err := os.WriteFile(fmt.Sprintf("%s/%s/%s", path, dir.Name, f.Name), f.Src, 0644); err != nil{
+        if err := os.WriteFile(fmt.Sprintf("%s/%s/%s", path, dir.Name, f.Name), []byte(f.Src), 0644); err != nil{
             return err
         }
     }
@@ -164,7 +167,7 @@ func (p *Project) traverseDirStructure(path string, dir Dir) error {
     return nil
 }
 
-func (p *Project) LoadFile(path string) []byte {
+func (p *Project) LoadFile(path string) string {
     data, err := p.Fs.Open(path)
     if err != nil{
         log.Fatal(err)
@@ -179,7 +182,7 @@ func (p *Project) LoadFile(path string) []byte {
         }
     }
 
-    return buff[:n]
+    return string(buff[:n])
 }
 
 func getProjectName(name string) string {
