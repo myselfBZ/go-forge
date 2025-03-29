@@ -1,9 +1,7 @@
 package store
 
 import (
-	"context"
-	"database/sql"
-	"time"
+    "context"
 )
 
 func NewMockStore() Storage {
