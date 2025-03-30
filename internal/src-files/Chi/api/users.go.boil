@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
-	"%[1]s/internal/store"
+	"{{ .ProjectName }}/internal/store"
 )
 
 

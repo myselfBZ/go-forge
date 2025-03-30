@@ -1,13 +1,12 @@
 package project
 
 import (
-	"errors"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"os/exec"
 	"strings"
+	"text/template"
 )
 
 
@@ -38,11 +37,11 @@ func (p *Project) Build() error {
         return err
     }
 
-    cmd = exec.Command("go", "mod", "tidy")
-
-    if _, err := cmd.CombinedOutput(); err != nil{
-        return err
-    }
+    // cmd = exec.Command("go", "mod", "tidy")
+    //
+    // if _, err := cmd.CombinedOutput(); err != nil{
+    //     return err
+    // }
 
     return nil
 }
@@ -62,12 +61,12 @@ func (p *Project) buildProjectStructure() Dir {
         Name: "api",
         Files: []File{
             // files that contain project's name
-            {Name: "api.go", Src: fmt.Sprintf(p.LoadFile(fmt.Sprintf(frameworkPath + "%s", "api.go.boil")), p.Name)},
-            {Name: "auth.go", Src: fmt.Sprintf(p.LoadFile(fmt.Sprintf(frameworkPath + "%s", "auth.go.boil")), p.Name)},
-            {Name: "middleware.go", Src: fmt.Sprintf(p.LoadFile(fmt.Sprintf(frameworkPath + "%s", "middleware.go.boil")), p.Name)},
-            {Name: "main.go", Src: fmt.Sprintf(p.LoadFile(fmt.Sprintf(frameworkPath + "%s", "main.go.boil")), p.Name)},
-            {Name: "test_utils.go", Src: fmt.Sprintf(p.LoadFile(fmt.Sprintf(frameworkPath + "%s", "test_utils.go.boil")), p.Name)},
-            {Name: "users.go", Src: fmt.Sprintf(p.LoadFile(fmt.Sprintf(frameworkPath + "%s", "users.go.boil")), p.Name)},
+            {Name: "api.go", Src: p.LoadFile(fmt.Sprintf(frameworkPath + "%s", "api.go.boil"))},
+            {Name: "auth.go", Src: p.LoadFile(fmt.Sprintf(frameworkPath + "%s", "auth.go.boil"))},
+            {Name: "middleware.go", Src: p.LoadFile(fmt.Sprintf(frameworkPath + "%s", "middleware.go.boil"))},
+            {Name: "main.go", Src: p.LoadFile(fmt.Sprintf(frameworkPath + "%s", "main.go.boil"))},
+            {Name: "test_utils.go", Src: p.LoadFile(fmt.Sprintf(frameworkPath + "%s", "test_utils.go.boil"))},
+            {Name: "users.go", Src: p.LoadFile(fmt.Sprintf(frameworkPath + "%s", "users.go.boil"))},
 
             {Name: "api_test.go", Src: p.LoadFile(fmt.Sprintf(frameworkPath + "%s", "api_test.go.boil"))},
             {Name: "errors.go", Src: p.LoadFile(fmt.Sprintf(frameworkPath + "%s", "errors.go.boil"))},
@@ -104,9 +103,9 @@ func (p *Project) buildProjectStructure() Dir {
     store.Dirs = append(store.Dirs, Dir{
         Name: "cache",
         Files: []File{
-            {Name: "storage.go", Src: fmt.Sprintf(p.LoadFile("cache/storage.go.boil"), p.Name)},
-            {Name: "users.go", Src: fmt.Sprintf(p.LoadFile("cache/users.go.boil"), p.Name)},
-            {Name: "mocks.go", Src: fmt.Sprintf(p.LoadFile("cache/mocks.go.boil"), p.Name)},
+            {Name: "storage.go", Src: p.LoadFile("cache/storage.go.boil")},
+            {Name: "users.go", Src: p.LoadFile("cache/users.go.boil")},
+            {Name: "mocks.go", Src: p.LoadFile("cache/mocks.go.boil")},
 
             {Name: "redis.go", Src: p.LoadFile("cache/redis.go.boil")},
         },
@@ -154,9 +153,17 @@ func (p *Project) traverseDirStructure(path string, dir Dir) error {
     }
 
     for _, f := range dir.Files{
-        if err := os.WriteFile(fmt.Sprintf("%s/%s/%s", path, dir.Name, f.Name), []byte(f.Src), 0644); err != nil{
-            return err
+        
+        outFile, err := os.Create(fmt.Sprintf("%s/%s/%s", path, dir.Name, f.Name))
+        if err != nil{
+            log.Fatal("couldn't create file", err)
         }
+        
+        if err := f.Src.Execute(outFile, p.config); err != nil{
+            log.Fatal("couldn't execute the template:", err)
+        }
+
+        outFile.Close()
     }
 
     for _, d := range dir.Dirs{
@@ -168,22 +175,13 @@ func (p *Project) traverseDirStructure(path string, dir Dir) error {
     return nil
 }
 
-func (p *Project) LoadFile(path string) string {
-    data, err := p.Fs.Open(path)
+func (p *Project) LoadFile(path string) *template.Template {
+    boil, err := template.ParseFiles(path)    
     if err != nil{
-        log.Fatal("couldn't load the file from embed.FS:", err)
+        log.Fatal("couldn't parse the template file", err)
     }
 
-    buff := make([]byte, 4096)
-    n, err := data.Read(buff)
-
-    if err != nil{
-        if !errors.Is(err, io.EOF) {
-            log.Fatal(err)
-        }
-    }
-
-    return string(buff[:n])
+    return boil
 }
 
 func getProjectName(name string) string {

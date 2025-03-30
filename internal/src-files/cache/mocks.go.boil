@@ -3,7 +3,7 @@ package cache
 import (
 	"context"
 
-	"%[1]s/internal/store"
+	"{{ .ProjectName }}/internal/store"
 	"github.com/stretchr/testify/mock"
 )
 

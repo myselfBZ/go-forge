@@ -6,11 +6,11 @@ import (
 	"time"
     _ "githib.com/lib/pq"
 	"github.com/go-redis/redis/v8"
-	"%[1]s/internal/auth"
-	"%[1]s/internal/db"
-	"%[1]s/internal/env"
-	"%[1]s/internal/store"
-	"%[1]s/internal/store/cache"
+	"{{ .ProjectName }}/internal/auth"
+	"{{ .ProjectName }}/internal/db"
+	"{{ .ProjectName }}/internal/env"
+	"{{ .ProjectName }}/internal/store"
+	"{{ .ProjectName }}/internal/store/cache"
 	"go.uber.org/zap"
 )
 

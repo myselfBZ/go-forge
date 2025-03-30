@@ -1,8 +1,9 @@
 package main
 
 import (
-    "github.com/myselfBZ/go-forge/internal/src-files"
+
 	"github.com/myselfBZ/go-forge/internal/cmdinterface"
+	srcfiles "github.com/myselfBZ/go-forge/internal/src-files"
 )
 
 

@@ -1,11 +1,18 @@
 package project
 
-import "embed"
+import (
+	"embed"
+	"text/template"
+)
 
 type Project struct{
     Name string
     DB        string
     Framework string
+
+    config struct{
+        ProjectName string
+    }
 
     Fs  embed.FS
 }
@@ -16,7 +23,7 @@ type Project struct{
 
 type File struct{
     Name string
-    Src string
+    Src *template.Template
 }
 
 type Dir struct{

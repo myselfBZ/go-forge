@@ -8,7 +8,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 
-	"%[1]s/internal/store"
+	"{{ .ProjectName }}/internal/store"
 )
 
 type RegisterUserPayload struct {
