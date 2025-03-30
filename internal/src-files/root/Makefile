@@ -1,5 +1,5 @@
 build:
-	@go build -o bin/main ./cmd/api
+	@go build -o bin/api ./cmd/api
 
 run:build
 	@./bin/api

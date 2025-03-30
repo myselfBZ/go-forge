@@ -5,9 +5,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"{{ .ProjectName }}/internal/auth"
-	"{{ .ProjectName }}/internal/store"
-	"{{ .ProjectName }}/internal/store/cache"
+	"{{ . }}/internal/auth"
+	"{{ . }}/internal/store"
+	"{{ . }}/internal/store/cache"
 	"go.uber.org/zap"
 )
 

@@ -10,7 +10,7 @@ type Project struct{
     DB        string
     Framework string
 
-    config struct{
+    Config struct{
         ProjectName string
     }
 

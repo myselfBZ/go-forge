@@ -37,11 +37,11 @@ func (p *Project) Build() error {
         return err
     }
 
-    // cmd = exec.Command("go", "mod", "tidy")
-    //
-    // if _, err := cmd.CombinedOutput(); err != nil{
-    //     return err
-    // }
+    cmd = exec.Command("go", "mod", "tidy")
+
+    if _, err := cmd.CombinedOutput(); err != nil{
+        return err
+    }
 
     return nil
 }
@@ -159,7 +159,7 @@ func (p *Project) traverseDirStructure(path string, dir Dir) error {
             log.Fatal("couldn't create file", err)
         }
         
-        if err := f.Src.Execute(outFile, p.config); err != nil{
+        if err := f.Src.Execute(outFile, p.Name); err != nil{
             log.Fatal("couldn't execute the template:", err)
         }
 
@@ -176,12 +176,16 @@ func (p *Project) traverseDirStructure(path string, dir Dir) error {
 }
 
 func (p *Project) LoadFile(path string) *template.Template {
-    boil, err := template.ParseFiles(path)    
+    content, err := p.Fs.ReadFile(path)
     if err != nil{
-        log.Fatal("couldn't parse the template file", err)
+        log.Fatal("couldn't open file", err)
+    }
+    tmpl, err := template.New(path).Parse(string(content))
+    if err != nil{
+        log.Fatal("couldn't parse the file", err)
     }
 
-    return boil
+    return tmpl
 }
 
 func getProjectName(name string) string {

@@ -15,10 +15,10 @@ import (
 	"github.com/go-chi/cors"
 	"go.uber.org/zap"
 
-	"{{.ProjectName}}/internal/auth"
-	"{{.ProjectName}}/internal/env"
-	"{{.ProjectName}}/internal/store"
-	"{{.ProjectName}}/internal/store/cache"
+	"{{.}}/internal/auth"
+	"{{.}}/internal/env"
+	"{{.}}/internal/store"
+	"{{.}}/internal/store/cache"
 )
 
 type application struct {
