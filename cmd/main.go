@@ -1,19 +1,15 @@
 package main
 
 import (
-	"embed"
-	_ "embed"
-
+    "github.com/myselfBZ/go-forge/internal/src-files"
 	"github.com/myselfBZ/go-forge/internal/cmdinterface"
 )
 
-//go:embed internal/src-files/**/*
-var fs embed.FS
 
 func main() {
 
 	app := App{
-        fs: fs,
+        fs: srcfiles.FS,
         cmdinterface: *cmdinterface.NewCmdInterface(),
         tools: tools{
 

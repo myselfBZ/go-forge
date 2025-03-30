@@ -48,8 +48,8 @@ func (p *Project) Build() error {
 }
 
 func (p *Project) buildProjectStructure() Dir {
-    frameworkPath := fmt.Sprintf("internal/src-files/%s/api/", p.Framework)
-    dbPath := fmt.Sprintf("internal/src-files/%s/", p.DB)
+    frameworkPath := fmt.Sprintf("%s/api/", p.Framework)
+    dbPath := fmt.Sprintf("%s/", p.DB)
 
     var root Dir
     root.Name = "root"
@@ -84,9 +84,9 @@ func (p *Project) buildProjectStructure() Dir {
     internals.Dirs = append(internals.Dirs, Dir{
         Name: "auth", 
         Files: []File{
-            {Name: "auth.go", Src: p.LoadFile("internal/src-files/auth/auth.go.boil")},
-            {Name: "jwt.go", Src: p.LoadFile("internal/src-files/auth/jwt.go.boil")},
-            {Name:"mocks.go", Src: p.LoadFile("internal/src-files/auth/mocks.go.boil")},
+            {Name: "auth.go", Src: p.LoadFile("auth/auth.go.boil")},
+            {Name: "jwt.go", Src: p.LoadFile("auth/jwt.go.boil")},
+            {Name:"mocks.go", Src: p.LoadFile("auth/mocks.go.boil")},
         },
     })
 
@@ -104,11 +104,11 @@ func (p *Project) buildProjectStructure() Dir {
     store.Dirs = append(store.Dirs, Dir{
         Name: "cache",
         Files: []File{
-            {Name: "storage.go", Src: fmt.Sprintf(p.LoadFile("internal/src-files/cache/storage.go.boil"), p.Name)},
-            {Name: "users.go", Src: fmt.Sprintf(p.LoadFile("internal/src-files/cache/users.go.boil"), p.Name)},
-            {Name: "mocks.go", Src: fmt.Sprintf(p.LoadFile("internal/src-files/cache/mocks.go.boil"), p.Name)},
+            {Name: "storage.go", Src: fmt.Sprintf(p.LoadFile("cache/storage.go.boil"), p.Name)},
+            {Name: "users.go", Src: fmt.Sprintf(p.LoadFile("cache/users.go.boil"), p.Name)},
+            {Name: "mocks.go", Src: fmt.Sprintf(p.LoadFile("cache/mocks.go.boil"), p.Name)},
 
-            {Name: "redis.go", Src: p.LoadFile("internal/src-files/cache/redis.go.boil")},
+            {Name: "redis.go", Src: p.LoadFile("cache/redis.go.boil")},
         },
     })
 
@@ -117,7 +117,7 @@ func (p *Project) buildProjectStructure() Dir {
     internals.Dirs = append(internals.Dirs, Dir{
         Name: "env",
         Files: []File{
-            {Name: "env.go", Src: p.LoadFile("internal/src-files/env/env.go.boil")},
+            {Name: "env.go", Src: p.LoadFile("env/env.go.boil")},
         },
     })
 
@@ -133,11 +133,11 @@ func (p *Project) buildProjectStructure() Dir {
     root.Dirs = append(root.Dirs, internals)
 
     root.Files = []File{
-        {Name: "Dockerfile", Src: p.LoadFile("internal/src-files/root/Dockerfile")},
-        {Name: ".gitignore", Src: p.LoadFile("internal/src-files/root/.gitignore")},
-        {Name: "compose.yaml", Src: p.LoadFile("internal/src-files/root/compose.yaml")},
-        {Name: "Makefile", Src: p.LoadFile("internal/src-files/root/Makefile")},
-        {Name: "README.md", Src: p.LoadFile("internal/src-files/root/README.md")},
+        {Name: "Dockerfile", Src: p.LoadFile("root/Dockerfile")},
+        {Name: ".gitignore", Src: p.LoadFile("root/.gitignore")},
+        {Name: "compose.yaml", Src: p.LoadFile("root/compose.yaml")},
+        {Name: "Makefile", Src: p.LoadFile("root/Makefile")},
+        {Name: "README.md", Src: p.LoadFile("root/README.md")},
     }
 
     return root
@@ -171,7 +171,7 @@ func (p *Project) traverseDirStructure(path string, dir Dir) error {
 func (p *Project) LoadFile(path string) string {
     data, err := p.Fs.Open(path)
     if err != nil{
-        log.Fatal(err)
+        log.Fatal("couldn't load the file from embed.FS:", err)
     }
 
     buff := make([]byte, 4096)

@@ -1,5 +1,5 @@
 do:
-	@go build -o test/bin .
+	@go build -o test/bin ./cmd
 
 run:
 	@go build -o bin/main ./cmd/
