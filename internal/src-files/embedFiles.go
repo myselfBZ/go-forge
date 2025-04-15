@@ -2,7 +2,6 @@ package srcfiles
 
 import (
 	"embed"
-	_ "embed"
 )
 
 //go:embed **/*
