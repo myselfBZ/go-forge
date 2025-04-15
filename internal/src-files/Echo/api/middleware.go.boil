@@ -1,0 +1,44 @@
+package main
+
+import (
+	"{{ . }}/internal/store"
+	"strings"
+
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/labstack/echo/v4"
+)
+
+func (app *application) AuthTokenMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		tokenHeader, ok := c.Request().Header["Authorization"]
+		if !ok || len(tokenHeader) < 1 {
+			return ErrTokenMissing
+		}
+		parts := strings.Split(tokenHeader[0], " ")
+		if len(parts) < 2 || parts[0] != "Bearer" {
+			return ErrTokenMissing
+		}
+		token := parts[1]
+
+		jwtToken, err := app.authenticator.ValidateToken(token)
+		if err != nil {
+			return ErrInvalidAuthToken
+		}
+
+		jwtClaims, _ := jwtToken.Claims.(jwt.MapClaims)
+		userId := jwtClaims["sub"].(string)
+		user, err := app.storage.Users.GetByID(c.Request().Context(), userId)
+
+		if err != nil {
+			switch err {
+			case store.ErrNotFound:
+				return ErrResourceNotFound
+			default:
+				return echo.ErrInternalServerError
+			}
+		}
+
+		c.Set(userCtx, user)
+		return next(c)
+	}
+}

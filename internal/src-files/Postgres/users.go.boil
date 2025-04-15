@@ -14,7 +14,7 @@ var (
 )
 
 type User struct {
-	ID        int64    `json:"id"`
+	ID        string    `json:"id"`
 	Username  string   `json:"username"`
 	Email     string   `json:"email"`
 	Password  password `json:"-"`
@@ -90,7 +90,7 @@ func (s *UserStore) create(ctx context.Context, tx *sql.Tx, user *User) error {
 	return nil
 }
 
-func (s *UserStore) GetByID(ctx context.Context, userID int64) (*User, error) {
+func (s *UserStore) GetByID(ctx context.Context, userID string) (*User, error) {
 	query := `
 		SELECT users.id, username, email, password, created_at, roles.*
 		FROM users
@@ -138,7 +138,7 @@ func (s *UserStore) Create(ctx context.Context, user *User) error {
 	})
 }
 
-func (s *UserStore) Delete(ctx context.Context, userID int64) error {
+func (s *UserStore) Delete(ctx context.Context, userID string) error {
 	return withTx(s.db, ctx, func(tx *sql.Tx) error {
 		if err := s.delete(ctx, tx, userID); err != nil {
 			return err
@@ -147,7 +147,7 @@ func (s *UserStore) Delete(ctx context.Context, userID int64) error {
 	})
 }
 
-func (s *UserStore) delete(ctx context.Context, tx *sql.Tx, id int64) error {
+func (s *UserStore) delete(ctx context.Context, tx *sql.Tx, id string) error {
 	query := `DELETE FROM users WHERE id = $1`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)

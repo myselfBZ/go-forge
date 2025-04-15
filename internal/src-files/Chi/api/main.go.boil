@@ -11,6 +11,7 @@ import (
 	"{{ . }}/internal/env"
 	"{{ . }}/internal/store"
 	"{{ . }}/internal/store/cache"
+    _ "github.com/joho/godotenv/autoload"
 	"go.uber.org/zap"
 )
 
@@ -42,7 +43,7 @@ func main() {
 			token: tokenConfig{
 				secret: env.GetString("AUTH_TOKEN_SECRET", "example"),
 				exp:    time.Hour * 24 * 3, // 3 days
-				iss:    "gophersocial",
+				iss:    "myproject",
 			},
 		},
 	}

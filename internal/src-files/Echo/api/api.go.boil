@@ -1,1 +1,100 @@
-//Echo
+package main
+
+import (
+	"{{ . }}/internal/auth"
+	"{{ . }}/internal/store"
+	"net/http"
+	"time"
+
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	"go.uber.org/zap"
+)
+
+type application struct {
+	config        config
+	authenticator auth.Authenticator
+	logger        *zap.SugaredLogger
+
+	storage store.Storage
+}
+
+type config struct {
+	addr string
+
+	db          dbConfig
+	env         string
+	apiURL      string
+	frontendURL string
+	auth        authConfig
+	redisCfg    redisConfig
+}
+
+type redisConfig struct {
+	addr    string
+	pw      string
+	db      int
+	enabled bool
+}
+
+type authConfig struct {
+	basic basicConfig
+	token tokenConfig
+}
+
+type tokenConfig struct {
+	secret string
+	exp    time.Duration
+	iss    string
+}
+
+type basicConfig struct {
+	user string
+	pass string
+}
+
+type dbConfig struct {
+	addr         string
+	maxOpenConns int
+	maxIdleConns int
+	maxIdleTime  string
+}
+
+func (app *application) registerRoutes(e *echo.Echo) {
+	e.Use(middleware.RequestLoggerWithConfig(
+		middleware.RequestLoggerConfig{
+			LogStatus: true,
+			LogURI:    true,
+			BeforeNextFunc: func(c echo.Context) {
+				c.Set("customValueFromContext", 42)
+			},
+			LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
+				value, _ := c.Get("customValueFromContext").(int)
+				app.logger.Infof("REQUEST: uri: %s, status: %d, custom-value: %d\n", v.URI, v.Status, value)
+				return nil
+			},
+		},
+	))
+
+	authentication := e.Group("/authentication")
+
+	authentication.POST("/token", app.loginHandler)
+	authentication.POST("/register", app.registerUserHandler)
+
+	e.GET("/health", func(c echo.Context) error {
+		type healthz struct {
+			Env    string
+			Status string
+		}
+
+		return c.JSON(http.StatusOK, healthz{Env: app.config.env, Status: "ok"})
+	})
+
+}
+
+func (app *application) run(addr string) error {
+	e := echo.New()
+	app.registerRoutes(e)
+
+	return e.Start(addr)
+}

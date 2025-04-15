@@ -1,0 +1,70 @@
+package main
+
+import (
+	"{{ . }}/internal/auth"
+	"{{ . }}/internal/db"
+	"{{ . }}/internal/env"
+	"{{ . }}/internal/store"
+	"log"
+	"time"
+    _ "github.com/joho/godotenv/autoload"
+	"go.uber.org/zap"
+)
+
+func main() {
+	cfg := config{
+		addr:        env.GetString("ADDR", ":6969"),
+		apiURL:      env.GetString("EXTERNAL_URL", "localhost:6969"),
+		frontendURL: env.GetString("FRONTEND_URL", "http://localhost:5173"),
+		db: dbConfig{
+			addr:         env.GetString("DB_ADDR", "postgres://postgres:new_password@localhost:32768/myproject?sslmode=disable"),
+			maxOpenConns: env.GetInt("DB_MAX_OPEN_CONNS", 30),
+			maxIdleConns: env.GetInt("DB_MAX_IDLE_CONNS", 30),
+			maxIdleTime:  env.GetString("DB_MAX_IDLE_TIME", "15m"),
+		},
+		redisCfg: redisConfig{
+			addr:    env.GetString("REDIS_ADDR", "localhost:6379"),
+			pw:      env.GetString("REDIS_PW", ""),
+			db:      env.GetInt("REDIS_DB", 0),
+			enabled: env.GetBool("REDIS_ENABLED", true),
+		},
+		env: env.GetString("ENV", "development"),
+		auth: authConfig{
+			basic: basicConfig{
+				user: env.GetString("AUTH_BASIC_USER", "admin"),
+				pass: env.GetString("AUTH_BASIC_PASS", "admin"),
+			},
+			token: tokenConfig{
+				secret: env.GetString("AUTH_TOKEN_SECRET", "example"),
+				exp:    time.Hour * 24 * 3, // 3 days
+				iss:    "myproject",
+			},
+		},
+	}
+	db, err := db.New(
+		cfg.db.addr,
+		cfg.db.maxOpenConns,
+		cfg.db.maxIdleConns,
+		cfg.db.maxIdleTime,
+	)
+
+	if err != nil {
+		log.Fatal("couldnt connect to db:", err)
+	}
+
+	log.Println("db connection established")
+
+	storage := store.NewStorage(db)
+
+	a := application{
+		storage: storage,
+		config:  cfg,
+        authenticator: auth.NewJWTAuthenticator(cfg.auth.token.secret, cfg.auth.token.iss, cfg.auth.token.iss),
+
+		logger: zap.Must(zap.NewProduction()).Sugar(),
+	}
+
+	a.logger.Info("Server is starting...")
+	a.logger.Infow("", "env", cfg.env, "url", cfg.apiURL)
+	a.run(a.config.addr)
+}

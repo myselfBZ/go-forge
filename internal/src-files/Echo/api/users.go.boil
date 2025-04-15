@@ -1,0 +1,27 @@
+package main
+
+import (
+	"{{ . }}/internal/store"
+	"net/http"
+
+	"github.com/labstack/echo/v4"
+)
+
+const userCtx = "user"
+
+func (app *application) getUserHandler(c echo.Context) error {
+    id := c.Param("userId")
+
+    user, err := app.storage.Users.GetByID(c.Request().Context(), id)
+    
+    if err != nil{
+        switch err {
+        case store.ErrNotFound:
+            return ErrResourceNotFound
+        default:
+            return ErrInternalServerError
+        }
+    }
+
+    return c.JSON(http.StatusOK, user)
+}

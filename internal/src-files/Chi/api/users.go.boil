@@ -2,7 +2,6 @@ package main
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"{{ . }}/internal/store"
@@ -28,11 +27,7 @@ const userCtx userKey = "user"
 //	@Security		ApiKeyAuth
 //	@Router			/users/{id} [get]
 func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
-	userID, err := strconv.ParseInt(chi.URLParam(r, "userID"), 10, 64)
-	if err != nil {
-		app.badRequestResponse(w, r, err)
-		return
-	}
+	userID := chi.URLParam(r, "userID")
 
 	user, err := app.getUser(r.Context(), userID)
 	if err != nil {

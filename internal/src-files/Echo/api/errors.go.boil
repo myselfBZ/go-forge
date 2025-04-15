@@ -1,0 +1,15 @@
+package main
+
+import (
+	"net/http"
+
+	"github.com/labstack/echo/v4"
+)
+
+var (
+	ErrTokenMissing        = echo.NewHTTPError(http.StatusForbidden, "Missing auth token")
+	ErrInvalidAuthToken    = echo.NewHTTPError(http.StatusForbidden, "Invalid token")
+	ErrResourceNotFound    = echo.NewHTTPError(http.StatusNotFound, "Resource not found")
+	ErrInvalidPayload      = echo.NewHTTPError(http.StatusBadRequest, "Invalid payload")
+	ErrInternalServerError = echo.NewHTTPError(http.StatusInternalServerError, "Server encountered a problem")
+)

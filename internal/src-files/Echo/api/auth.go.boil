@@ -1,0 +1,134 @@
+package main
+
+import (
+	"{{ . }}/internal/store"
+	"net/http"
+	"time"
+
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/labstack/echo/v4"
+)
+
+type UserWithToken struct {
+	*store.User
+	Token string `json:"token"`
+}
+
+type registerPayload struct {
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type loginPayload struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+func (app *application) registerUserHandler(c echo.Context) error {
+	var payload registerPayload
+
+	if err := c.Bind(&payload); err != nil {
+		return ErrInvalidPayload
+	}
+    
+
+
+	user := &store.User{
+        Email:    payload.Email,
+		Username: payload.Username,
+		IsActive: true,
+		Role: store.Role{
+			Name: "user",
+		},
+	}
+
+	if err := user.Password.Set(payload.Password); err != nil {
+		return ErrInternalServerError
+	}
+
+	ctx := c.Request().Context()
+
+	if err := app.storage.Users.Create(ctx, user); err != nil {
+		var httpErr error
+		switch err {
+		case store.ErrDuplicateEmail:
+			httpErr = echo.NewHTTPError(http.StatusConflict, "Dupliacte emails")
+		case store.ErrDuplicateUsername:
+			httpErr = echo.NewHTTPError(http.StatusConflict, "Dupliacte Usernames")
+		default:
+			httpErr = ErrInternalServerError
+		}
+
+		return httpErr
+	}
+
+	claims := jwt.MapClaims{
+		"sub": user.ID,
+		"exp": time.Now().Add(app.config.auth.token.exp).Unix(),
+		"iat": time.Now().Unix(),
+		"nbf": time.Now().Unix(),
+		"iss": app.config.auth.token.iss,
+		"aud": app.config.auth.token.iss,
+	}
+
+	plainToken, err := app.authenticator.GenerateToken(claims)
+
+	if err != nil {
+		return ErrInternalServerError
+	}
+
+	userWithToken := UserWithToken{
+		User:  user,
+		Token: plainToken,
+	}
+
+	return c.JSON(http.StatusCreated, userWithToken)
+}
+
+func (app *application) loginHandler(c echo.Context) error {
+	var payload loginPayload
+
+	if err := c.Bind(&payload); err != nil {
+		return ErrInvalidPayload
+	}
+
+	ctx := c.Request().Context()
+
+	user, err := app.storage.Users.GetByEmail(ctx, payload.Email)
+
+	if err != nil {
+		var httpErr error
+		switch err {
+		case store.ErrNotFound:
+			httpErr = echo.NewHTTPError(http.StatusNotFound, "User not found")
+		default:
+			httpErr = ErrInternalServerError
+		}
+
+		return httpErr
+	}
+
+	claims := jwt.MapClaims{
+		"sub": user.ID,
+		"exp": time.Now().Add(app.config.auth.token.exp).Unix(),
+		"iat": time.Now().Unix(),
+		"nbf": time.Now().Unix(),
+		"iss": app.config.auth.token.iss,
+		"aud": app.config.auth.token.iss,
+	}
+
+	plainToken, err := app.authenticator.GenerateToken(claims)
+
+	if err != nil {
+		return ErrInternalServerError
+	}
+
+	userWithToken := UserWithToken{
+		User:  user,
+		Token: plainToken,
+	}
+
+	return c.JSON(http.StatusCreated, userWithToken)
+
+}
