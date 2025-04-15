@@ -78,6 +78,14 @@ func (p *Project) buildProjectStructure() Dir {
 
     cmd.Dirs = append(cmd.Dirs, Dir{
         Name: "migrate",
+        Files: []File{
+            { Name: "00001_create_roles.down.sql", Src: p.LoadFile("migrations/00001_create_roles.down.sql") },
+            { Name: "00001_create_roles.up.sql", Src: p.LoadFile("migrations/00001_create_roles.up.sql") },
+            { Name: "00002_create_user.down.sql", Src: p.LoadFile("migrations/00002_create_user.down.sql") },
+            { Name: "00002_create_user.up.sql", Src: p.LoadFile("migrations/00002_create_user.up.sql") },
+            { Name: "00003_seed_users_with_roles.down.sql", Src: p.LoadFile("migrations/00003_seed_users_with_roles.down.sql") },
+            { Name: "00003_seed_users_with_roles.up.sql", Src: p.LoadFile("migrations/00003_seed_users_with_roles.up.sql") },
+        },
     })
 
     internals.Dirs = append(internals.Dirs, Dir{
@@ -137,6 +145,7 @@ func (p *Project) buildProjectStructure() Dir {
         {Name: "compose.yaml", Src: p.LoadFile("root/compose.yaml")},
         {Name: "Makefile", Src: p.LoadFile("root/Makefile")},
         {Name: "README.md", Src: p.LoadFile("root/README.md")},
+        {Name: ".env", Src: p.LoadFile("root/.env")},
     }
 
     return root
