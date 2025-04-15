@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"fmt"
 	"os"
 
 	"github.com/myselfBZ/go-forge/internal/cmdinterface"
@@ -36,4 +37,11 @@ func (a *App) Start() {
         a.cmdinterface.PrintWithColor(cmdinterface.Red, err.Error())
         os.Exit(1)
     }
+
+    a.cmdinterface.PrintWithColor(cmdinterface.WhiteBold, fmt.Sprintf(
+        `1. cd %s
+2. run 'make migrate' for migrations
+3. run 'make run' to run the API`,
+         prjct.Name,
+    ))
 }
