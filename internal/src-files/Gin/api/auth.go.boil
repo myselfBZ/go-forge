@@ -1,0 +1,127 @@
+package main
+
+import (
+	"framework-experiment/internal/store"
+	"net/http"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
+)
+
+
+type UserWithToken struct {
+	*store.User
+	Token string `json:"token"`
+}
+
+type registerPayload struct {
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type loginPayload struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+
+func (app *application) registerUserHandler(c *gin.Context) {
+    var payload registerPayload
+    if err := c.ShouldBindBodyWithJSON(&payload); err != nil{
+        app.invalidPayload(c)
+        return
+    }
+    user := &store.User{
+        Email:    payload.Email,
+        Username: payload.Username,
+        IsActive: true,
+        Role: store.Role{
+            Name: "user",
+        },
+	}
+
+    if err := user.Password.Set(payload.Password); err != nil{
+        app.internalServerError(c, err)
+        return
+    }
+
+    if err := app.storage.Users.Create(c.Request.Context(), user); err != nil{
+        switch err {
+        case store.ErrConflict:
+            app.conflictResponse(c, err)
+        default:
+            app.internalServerError(c, err)
+        }
+        return
+    }
+
+    
+	claims := jwt.MapClaims{
+		"sub": user.ID,
+		"exp": time.Now().Add(app.config.auth.token.exp).Unix(),
+		"iat": time.Now().Unix(),
+		"nbf": time.Now().Unix(),
+		"iss": app.config.auth.token.iss,
+		"aud": app.config.auth.token.iss,
+	}
+
+	token, err := app.authenticator.GenerateToken(claims)
+	if err != nil {
+		app.internalServerError(c, err)
+		return
+	}
+
+    c.JSON(http.StatusCreated, &UserWithToken{
+        User: user,
+        Token: token,
+    })
+
+}
+
+func (app *application) createTokenHandler(c *gin.Context) {
+    var payload loginPayload
+
+    if err := c.ShouldBindJSON(&payload); err != nil{
+        app.invalidPayload(c)
+        return
+    }
+
+    user, err  := app.storage.Users.GetByEmail(c.Request.Context(), payload.Email)
+    if err != nil{
+        switch err {
+        case store.ErrNotFound:
+            app.forbiddenResponse(c, err)
+        default:
+            app.internalServerError(c, err)
+        }
+        return
+    }
+
+    if err := user.Password.Compare(payload.Password); err != nil{
+        app.forbiddenResponse(c, err)
+        return
+    }
+
+    	claims := jwt.MapClaims{
+		"sub": user.ID,
+		"exp": time.Now().Add(app.config.auth.token.exp).Unix(),
+		"iat": time.Now().Unix(),
+		"nbf": time.Now().Unix(),
+		"iss": app.config.auth.token.iss,
+		"aud": app.config.auth.token.iss,
+	}
+
+	token, err := app.authenticator.GenerateToken(claims)
+
+	if err != nil {
+		app.internalServerError(c, err)
+		return
+	}
+
+    c.JSON(http.StatusOK, &UserWithToken{
+        User: user,
+        Token: token,
+    })
+}

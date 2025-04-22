@@ -1,1 +1,130 @@
-//Gin
+package main
+
+import (
+	"context"
+	"errors"
+	"framework-experiment/internal/auth"
+	"framework-experiment/internal/store"
+	"framework-experiment/internal/store/cache"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
+)
+
+type application struct {
+    config config
+    logger *zap.SugaredLogger
+    storage     store.Storage
+    authenticator auth.Authenticator
+    cacheStorage  cache.Storage
+}
+
+type config struct {
+	addr string
+    
+	db          dbConfig
+	env         string
+	apiURL      string
+	frontendURL string
+	auth        authConfig
+	redisCfg    redisConfig
+}
+
+type redisConfig struct {
+	addr    string
+	pw      string
+	db      int
+	enabled bool
+}
+
+
+
+type dbConfig struct {
+	addr         string
+	maxOpenConns int
+	maxIdleConns int
+	maxIdleTime  string
+}
+
+type authConfig struct {
+	token tokenConfig
+}
+
+
+type tokenConfig struct {
+	secret string
+	exp    time.Duration
+	iss    string
+}
+
+
+func (app *application) registerRoutes(e *gin.Engine) {
+    e.GET("/health", func(ctx *gin.Context) {
+        ctx.JSON(http.StatusOK, struct{
+            Message string `json:"message"`
+        }{
+            Message: "hi there motherf*cker",
+        })
+    })
+    
+    v1 := e.Group("/v1")
+
+    auth := v1.Group("/authentication")
+
+    auth.POST("/users", app.registerUserHandler)
+    auth.POST("/token", app.createTokenHandler)
+
+    user := v1.Group("/users", app.AuthTokenMiddleware())
+    user.GET("/:id", app.getUserHandler)
+}
+
+func (app *application) run() error {
+    router := gin.Default()
+    app.registerRoutes(router)
+
+    srv := &http.Server{
+        Addr: app.config.addr,
+        Handler:      router,
+		WriteTimeout: time.Second * 30,
+		ReadTimeout:  time.Second * 10,
+		IdleTimeout:  time.Minute,
+    }
+
+    shutdown := make(chan error)
+
+	go func() {
+		quit := make(chan os.Signal, 1)
+
+		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+		s := <-quit
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		app.logger.Infow("signal caught", "signal", s.String())
+
+        shutdown <- srv.Shutdown(ctx)
+	}()
+
+	app.logger.Infow("server has started", "addr", app.config.addr, "env", app.config.env)
+
+	err := srv.ListenAndServe()
+
+	if !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+
+	err = <-shutdown
+	if err != nil {
+		return err
+	}
+
+	app.logger.Infow("server has stopped", "addr", app.config.addr, "env", app.config.env)
+
+    return nil
+}

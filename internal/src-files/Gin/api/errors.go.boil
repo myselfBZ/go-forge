@@ -1,0 +1,57 @@
+package main
+
+import (
+	"fmt"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+func writeJSONError(c *gin.Context, code int, error string) {
+    c.JSON(code, struct{
+        Error string `json:"error"`
+    }{
+        Error: error,
+    })
+}
+
+func (app *application) invalidPayload(c *gin.Context) {
+    app.logger.Errorw("invalid payload", "method", c.Request.Method, "path", c.Request.URL.Path, "err", "invaild payload")
+
+    writeJSONError(c, http.StatusBadRequest, "invalid payload")
+}
+
+func (app *application) internalServerError(c *gin.Context, err error) {
+	app.logger.Errorw("internal error", "method", c.Request.Method, "path", c.Request.URL.Path, "error", err.Error())
+
+	writeJSONError(c, http.StatusInternalServerError, "the server encountered a problem")
+}
+
+func (app *application) forbiddenResponse(c *gin.Context, err error) {
+	app.logger.Warnw("forbidden", "method", c.Request.Method, "path", c.Request.URL.Path, "error")
+
+	writeJSONError(c, http.StatusForbidden, "forbidden")
+}
+
+func (app *application) badRequestResponse(c *gin.Context, err error) {
+	app.logger.Warnf("bad request", "method", c.Request.Method, "path", c.Request.URL.Path, "error", err.Error())
+
+	writeJSONError(c, http.StatusBadRequest, err.Error())
+}
+
+func (app *application) conflictResponse(c *gin.Context, err error) {
+	app.logger.Errorf("conflict response", "method", c.Request.Method, "path", c.Request.URL.Path, "error", err.Error())
+
+	writeJSONError(c, http.StatusConflict, err.Error())
+}
+
+func (app *application) notFoundResponse(c *gin.Context, resource string, err error) {
+	app.logger.Warnf("not found error", "method", c.Request.Method, "path", c.Request.URL.Path, "error", err.Error())
+    writeJSONError(c, http.StatusNotFound, fmt.Sprintf("%s not found", resource))
+}
+
+func (app *application) unauthorizedErrorResponse(c *gin.Context, err error) {
+	app.logger.Warnf("unauthorized error", "method", c.Request.Method, "path", c.Request.URL.Path, "error", err.Error())
+
+	writeJSONError(c, http.StatusUnauthorized, "unauthorized")
+}
