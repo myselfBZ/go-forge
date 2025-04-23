@@ -25,12 +25,17 @@ type Storage struct {
 	Roles interface {
 		GetByName(context.Context, string) (*Role, error)
 	}
+
+    Service interface {
+        Health() *HealthStats
+    }
 }
 
 func NewStorage(db *sql.DB) Storage {
 	return Storage{
 		Users:     &UserStore{db},
 		Roles:     &RoleStore{db},
+        Service:  &service{db},
 	}
 }
 

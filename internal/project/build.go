@@ -105,6 +105,7 @@ func (p *Project) buildProjectStructure() Dir {
             {Name: "users.go", Src: p.LoadFile(fmt.Sprintf(dbPath + "%s", "users.go.boil"))},
             {Name: "mocks.go", Src: p.LoadFile(fmt.Sprintf(dbPath + "%s", "mocks.go.boil") )},
             {Name: "roles.go", Src: p.LoadFile(fmt.Sprintf(dbPath + "%s", "roles.go.boil"))},
+            {Name: "service.go", Src: p.LoadFile(fmt.Sprintf(dbPath + "%s", "service.go.boil"))},
         },
     }
 

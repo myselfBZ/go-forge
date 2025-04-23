@@ -1,0 +1,66 @@
+package store
+
+import (
+	"context"
+	"database/sql"
+	"log"
+	"time"
+)
+
+
+type HealthStats struct {
+	Message           string `json:"message"`
+	OpenConnections   int    `json:"open_connections"`
+	InUse             int    `json:"in_use"`
+	IdleCount         int    `json:"idle_count"`
+	WaitCount         int64    `json:"wait_count"`
+	WaitDuration      string    `json:"wait_duration"`
+	MaxIdleClosed     int64    `json:"max_idle_closed"`
+	MaxLifetimeClosed int64    `json:"max_lifetime_closed"`
+    Status            string   `json:"status"`
+}
+
+type service struct{
+    db *sql.DB
+}
+
+func (s *service) Health() *HealthStats {
+    var stats HealthStats
+
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
+	err := s.db.PingContext(ctx)
+	if err != nil {
+		log.Fatalf("db down: %v", err) // Log the error and terminate the program
+	}
+
+	stats.Status = "up"
+	stats.Message = "It's healthy"
+
+	dbStats := s.db.Stats()
+	stats.OpenConnections = dbStats.OpenConnections
+	stats.InUse = dbStats.InUse
+	stats.IdleCount = dbStats.Idle
+	stats.WaitCount = dbStats.WaitCount
+	stats.WaitDuration = dbStats.WaitDuration.String()
+	stats.MaxIdleClosed = dbStats.MaxIdleClosed
+	stats.MaxLifetimeClosed = dbStats.MaxLifetimeClosed
+
+	if dbStats.OpenConnections > 40 { // Assuming 50 is the max for this example
+		stats.Message = "The database is experiencing heavy load."
+	}
+
+	if dbStats.WaitCount > 1000 {
+		stats.Message = "The database has a high number of wait events, indicating potential bottlenecks."
+	}
+
+	if dbStats.MaxIdleClosed > int64(dbStats.OpenConnections)/2 {
+		stats.Message = "Many idle connections are being closed, consider revising the connection pool settings."
+	}
+
+	if dbStats.MaxLifetimeClosed > int64(dbStats.OpenConnections)/2 {
+		stats.Message = "Many connections are being closed due to max lifetime, consider increasing max lifetime or revising the connection usage pattern."
+	}
+    return &stats
+}
