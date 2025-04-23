@@ -1,0 +1,56 @@
+package main
+
+import (
+	"context"
+	"{{ . }}/internal/store"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+type userKey string
+
+const userCtx userKey = "user"
+
+func (app *application) getUserHandler(c *gin.Context) {
+    userId := c.Param("id")
+    user, err := app.getUser(c.Request.Context(), userId)
+    if err != nil{
+        switch err {
+        case store.ErrNotFound:
+            app.notFoundResponse(c, "user", err)
+        default:
+            app.internalServerError(c, err)
+        }
+        return
+    }
+
+    c.JSON(http.StatusOK, user) 
+}
+
+
+
+
+func (app *application) getUser(ctx context.Context, userID string) (*store.User, error) {
+	if !app.config.redisCfg.enabled {
+		return app.storage.Users.GetByID(ctx, userID)
+	}
+
+	user, err := app.cacheStorage.Users.Get(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	if user == nil {
+		user, err = app.storage.Users.GetByID(ctx, userID)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := app.cacheStorage.Users.Set(ctx, user); err != nil {
+			return nil, err
+		}
+	}
+
+	return user, nil
+}

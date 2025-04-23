@@ -1,0 +1,49 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"strings"
+
+	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
+)
+
+func (app *application) AuthTokenMiddleware() gin.HandlerFunc {
+	return gin.HandlerFunc(func(c *gin.Context) {
+        authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			app.unauthorizedErrorResponse(c, fmt.Errorf("authorization header is missing"))
+			return
+		}
+
+		parts := strings.Split(authHeader, " ")
+		if len(parts) != 2 || parts[0] != "Bearer" {
+			app.unauthorizedErrorResponse(c, fmt.Errorf("authorization header is malformed"))
+			return
+		}
+
+		token := parts[1]
+		jwtToken, err := app.authenticator.ValidateToken(token)
+		if err != nil {
+			app.unauthorizedErrorResponse(c, err)
+			return
+		}
+
+		claims, _ := jwtToken.Claims.(jwt.MapClaims)
+
+		userID := fmt.Sprintf("%s", claims["sub"])
+
+		ctx := c.Request.Context()
+
+		user, err := app.storage.Users.GetByID(ctx, userID)
+		if err != nil {
+			app.unauthorizedErrorResponse(c, err)
+			return
+		}
+
+		ctx = context.WithValue(ctx, userCtx, user)
+        c.Request = c.Request.WithContext(ctx)
+        c.Next()
+	})
+}

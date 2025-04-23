@@ -1,7 +1,7 @@
 package main
 
 import (
-	"framework-experiment/internal/store"
+	"{{ . }}/internal/store"
 	"net/http"
 	"time"
 
@@ -49,7 +49,9 @@ func (app *application) registerUserHandler(c *gin.Context) {
 
     if err := app.storage.Users.Create(c.Request.Context(), user); err != nil{
         switch err {
-        case store.ErrConflict:
+        case store.ErrDuplicateEmail:
+            app.conflictResponse(c, err)
+        case store.ErrDuplicateUsername:
             app.conflictResponse(c, err)
         default:
             app.internalServerError(c, err)

@@ -16,42 +16,81 @@ func writeJSONError(c *gin.Context, code int, error string) {
 }
 
 func (app *application) invalidPayload(c *gin.Context) {
-    app.logger.Errorw("invalid payload", "method", c.Request.Method, "path", c.Request.URL.Path, "err", "invaild payload")
+    app.logger.Errorw("invalid payload", 
+        "method", c.Request.Method, 
+        "path", c.Request.URL.Path, 
+        "err", "invaild payload",
+    )
 
     writeJSONError(c, http.StatusBadRequest, "invalid payload")
 }
 
 func (app *application) internalServerError(c *gin.Context, err error) {
-	app.logger.Errorw("internal error", "method", c.Request.Method, "path", c.Request.URL.Path, "error", err.Error())
+	app.logger.Errorw("internal error", 
+        "method", c.Request.Method, 
+        "path", c.Request.URL.Path, 
+        "error", err,
+    )
 
 	writeJSONError(c, http.StatusInternalServerError, "the server encountered a problem")
 }
 
 func (app *application) forbiddenResponse(c *gin.Context, err error) {
-	app.logger.Warnw("forbidden", "method", c.Request.Method, "path", c.Request.URL.Path, "error")
+	app.logger.Warnw("forbidden", 
+        "method", c.Request.Method, 
+        "path", c.Request.URL.Path, 
+        "error", err,
+    )
 
 	writeJSONError(c, http.StatusForbidden, "forbidden")
 }
 
 func (app *application) badRequestResponse(c *gin.Context, err error) {
-	app.logger.Warnf("bad request", "method", c.Request.Method, "path", c.Request.URL.Path, "error", err.Error())
+	app.logger.Warnf("bad request", 
+        "method", c.Request.Method, 
+        "path", c.Request.URL.Path, 
+        "error", err,
+    )
 
 	writeJSONError(c, http.StatusBadRequest, err.Error())
 }
 
 func (app *application) conflictResponse(c *gin.Context, err error) {
-	app.logger.Errorf("conflict response", "method", c.Request.Method, "path", c.Request.URL.Path, "error", err.Error())
+	app.logger.Errorw("conflict response", 
+        "method", c.Request.Method, 
+        "path", c.Request.URL.Path, 
+        "error", err,
+    )
 
 	writeJSONError(c, http.StatusConflict, err.Error())
 }
 
 func (app *application) notFoundResponse(c *gin.Context, resource string, err error) {
-	app.logger.Warnf("not found error", "method", c.Request.Method, "path", c.Request.URL.Path, "error", err.Error())
+	app.logger.Warnw("not found error", 
+        "method", c.Request.Method, 
+        "path", c.Request.URL.Path, 
+        "error", err,
+    )
     writeJSONError(c, http.StatusNotFound, fmt.Sprintf("%s not found", resource))
 }
 
 func (app *application) unauthorizedErrorResponse(c *gin.Context, err error) {
-	app.logger.Warnf("unauthorized error", "method", c.Request.Method, "path", c.Request.URL.Path, "error", err.Error())
+	app.logger.Warnw("unauthorized error", 
+        "method", c.Request.Method, 
+        "path", c.Request.URL.Path, 
+        "error", err,
+    )
+	writeJSONError(c, http.StatusUnauthorized, "unauthorized")
+}
+
+func (app *application) unauthorizedBasicErrorResponse(c *gin.Context, err error) {
+	app.logger.Warnf("unauthorized basic error", 
+        "method", c.Request.Method, 
+        "path", c.Request.URL.Path, 
+        "error", err,
+    )
+
+	c.Header("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
 
 	writeJSONError(c, http.StatusUnauthorized, "unauthorized")
 }
