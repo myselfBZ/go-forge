@@ -81,14 +81,7 @@ func (app *application) registerRoutes(e *echo.Echo) {
 	authentication.POST("/token", app.loginHandler)
 	authentication.POST("/register", app.registerUserHandler)
 
-	e.GET("/health", func(c echo.Context) error {
-		type healthz struct {
-			Env    string
-			Status string
-		}
-
-		return c.JSON(http.StatusOK, healthz{Env: app.config.env, Status: "ok"})
-	})
+	e.GET("/health", app.healthCheckHandler)
 
 }
 
