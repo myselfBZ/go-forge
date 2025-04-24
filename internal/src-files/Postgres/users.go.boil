@@ -163,8 +163,10 @@ func (s *UserStore) delete(ctx context.Context, tx *sql.Tx, id string) error {
 
 func (s *UserStore) GetByEmail(ctx context.Context, email string) (*User, error) {
 	query := `
-		SELECT id, username, email, password, created_at FROM users
-		WHERE email = $1 AND is_active = true
+		SELECT users.id, username, email, password, created_at, roles.*
+		FROM users
+		JOIN roles ON (users.role_id = roles.id)
+		WHERE users.email = $1 AND is_active = true
 	`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
@@ -175,8 +177,12 @@ func (s *UserStore) GetByEmail(ctx context.Context, email string) (*User, error)
 		&user.ID,
 		&user.Username,
 		&user.Email,
-		&user.Password.hash,
+        &user.Password.hash,
 		&user.CreatedAt,
+		&user.Role.ID,
+		&user.Role.Name,
+		&user.Role.Level,
+		&user.Role.Description,
 	)
 	if err != nil {
 		switch err {
